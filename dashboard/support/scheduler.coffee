@@ -14,9 +14,13 @@ afterRender: ->
   @self = window.rw[@namespace]
 
 boot: ->
+  @maxInterval = 0
   @schedule = {}
   @readyState = 'ready'
 
 scheduleAction: (interval, callback) ->
-  @schedule[interval] = [] unless @schedule[interval]?
-  @schedule[interval].push callback
+  safeInterval = parseInt(interval)
+  throw new TypeError("interval MUST be an integer (#{interval} provided") if isNaN(safeInterval)
+  @schedule[safeInterval] = [] unless @schedule[interval]?
+  @schedule[safeInterval].push callback
+  @maxInterval = safeInterval unless @maxInterval > safeInterval

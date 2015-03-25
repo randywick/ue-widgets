@@ -172,11 +172,12 @@ afterBoot: ->
     @bootSequence = 'failed'
     return console.log 'Failed to enter afterBoot sequence.  Is bootstrap attempting to load itself?', e
 
+  @bootSequence = 'completed'
+
   # call afterBoot() on every module aside from this
   for module in @modules
-    window.rw[module].context.afterBoot.call(window.rw[module].context) unless module is @namespace
+    window.rw[module].context.afterBoot() unless module is @namespace
 
-  @bootSequence = 'completed'
   @readyState = 'ready'
 
 

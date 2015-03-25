@@ -23,6 +23,8 @@ runCommand: (payload, callback, context) ->
 
 
   # resolve context
+  context = @rw[context] if @rw[context]?
+
   callback = context[callback] if typeof context == 'object'
 
   # tests whether callback is valid
@@ -30,14 +32,12 @@ runCommand: (payload, callback, context) ->
 
   # Test for a mock value to send without actually running the command
   if @rw.config.mockResults == true and context.mockValue?
-    callback(null, context.mockValue, null)
+    callback.call(context, null, context.mockValue, null)
     return
 
   # run the payload
   @run payload.actual(), (error, stdout, stderr) ->
-    console.log stdout
-    return
-    callback(error, stdout, stderr)
+    callback.call(context, error, stdout, stderr)
   return true
 
 

@@ -7,6 +7,7 @@ view: 'debug'
 render: (output) -> return @makeView @view
 
 afterRender: (domEl) ->
+  @documentElement = domEl
   window.rw = {} unless window.rw?
   window.rw[@namespace] =
     context: this
@@ -15,7 +16,55 @@ afterRender: (domEl) ->
   uebersicht.makeBgSlice(el) for el in $(domEl).find '.bg-slice'
 
 afterBoot: ->
-  console.log 'hello, world'
+
+
+#TODO: Get rid of this bridge
+updateSpeedTest: (payload) ->
+  packet =
+    display: @displayType.result
+    changes:
+      currentSpeedValue: payload.download.value
+      currentSpeedOrder: payload.download.order
+  @updateElements(packet)
+
+
+
+updateElements: (payload) ->
+  @debugMessage = []
+  @setVisibility @rw.helpers.camelToHyphen(payload.display)
+  for element, value of payload.changes
+    @setValue @rw.helpers.camelToHyphen(element), value
+    console.log @rw.helpers.camelToHyphen(element), value
+  @setValue 'last-update', @timestamp
+  @setValue 'debug', @debugMessage.join "<br>"
+  @setValue 'raw', @raw
+
+
+
+displayType:
+  result: 'currentResult'
+  error: 'currentError'
+
+# sets one 'selfish' element to visible and all others to invisible
+setVisibility: (section) ->
+  elements = $(@documentElement).find '.selfish'
+  for el in elements
+    @debugMessage.push $(el).attr 'id'
+  @debugMessage.push section
+  return
+  el.removeClass 'invisible' unless el.attr('id') == section for el in elements
+  section = $(@documentElement).find section
+  section.addClass 'invisible' unless section.hasClass 'invisible'
+
+
+setValue: (element, value) ->
+  target = element unless typeof element == 'string'
+  target = $(@documentElement).find '#' + element if typeof element == 'string'
+  return unless target?
+  target.html value
+
+
+
 
 ### TEMPLATING ###
 views:

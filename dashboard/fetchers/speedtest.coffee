@@ -16,6 +16,11 @@ afterRender: ->
   @self = window.rw[@namespace]
 
 
+afterBoot: ->
+  @rw.data.speedtest = {}
+  @fetch()
+
+
 ### SPEED TEST ###
 # Powered by speedtest.net, using the excellent speedtest-cli python script by sivel,
 # available at https://github.com/sivel/speedtest-cli
@@ -28,15 +33,21 @@ Upload: 23.03 Mbit/s
 
 fetch: ->
   payload = @rw.commander.makePayload('/usr/local/bin/speedtest-cli', '--simple')
-  @rw.commander.runCommand(payload, 'parseResults', @self.context)
+  @rw.commander.runCommand(payload, 'captureResult', 'speedtest')
+
+
+captureResult: (error, stdout, stderr) ->
+  data = @parseResults(stdout)
+  @rw.data.speedtest.current = data
+  @rw.dashboard.updateSpeedTest(data)
+
 
 # parse the command output and structure the output. expecting lines containing:
 # Measurement: [rate] [order]
 # Download: 50 Mbit/s
-
-parseResults: (error, stdout, stderr) ->
+parseResults: (raw) ->
   # split the output into lines
-  lines = stdout.split '\n'
+  lines = raw.split '\n'
   response = {}
   for line in lines
     # split the lines into columns
@@ -58,5 +69,4 @@ parseResults: (error, stdout, stderr) ->
       value: data[0]
       order: data[1]
 
-  # TODO: DO SOMETHING WITH THE RESPONSE
-  console.log response
+  return response

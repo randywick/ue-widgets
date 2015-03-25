@@ -15,4 +15,4 @@ afterRender: ->
 
 
 defaultAppPath: '/usr/local/bin'
-mockResults: true
+mockResults: false

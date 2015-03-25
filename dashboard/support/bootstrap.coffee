@@ -46,7 +46,8 @@ modules: [
   'helpers',
   'dashboard',
   'speedtest',
-  'scheduler'
+  'scheduler',
+  'data'
 ]
 
 render: -> return null
@@ -76,7 +77,7 @@ boot: ->
   # initialize accessible properties
   @self.aliases = {} unless @self.aliases?
 
-  @refreshFrequency = 1000
+  @refreshFrequency = 300
   @bootSequence = 'loadModules'
 
 # Ensure each module is booted and aliases are assigned before setting booted property to true
@@ -130,7 +131,7 @@ bootModules: ->
   catch e
     unless e.type is 'recoverable'
       @bootSequence = 'failed'
-      return console.log 'an unrecoverable error has been thrown', e
+      return console.log 'an unrecoverable error has been thrown', e.message
 
     # If this error is caught, we have exceeded the allowed attempts without one or more modules loading.
     # we can try to proceed anyway.  First, grab a list of unset ready states to identify the most likely culprits
@@ -142,7 +143,8 @@ bootModules: ->
 
   # iterate over modules and call the boot() method, omitting this module
   unless @booting?
-    window.rw[module].context.boot() unless module is @namespace for module in @modules
+    for module in @modules
+      window.rw[module].context.boot.call(window.rw[module].context) unless module is @namespace
 
   # build a new array of modules not reporting 'ready' (or not reporting anything)
   @booting = []
@@ -172,7 +174,7 @@ afterBoot: ->
 
   # call afterBoot() on every module aside from this
   for module in @modules
-    window.rw[module].context.afterBoot() unless module is @namespace
+    window.rw[module].context.afterBoot.call(window.rw[module].context) unless module is @namespace
 
   @bootSequence = 'completed'
   @readyState = 'ready'
@@ -183,10 +185,11 @@ afterBoot: ->
 enter: (sequence) ->
   # test the provided sequence against expected bootSequence
   unless sequence is @bootSequence
-    throw new Error
-      type: 'unrecoverable'
-      code: 2
-      message: "BOOT SEQUENCE STATE MISMATCH: EXPECTED #{@bootSequence}; OBSERVED #{sequence}"
+    error = new Error()
+    error.type = 'unrecoverable'
+    error.code = 2
+    error.message = "BOOT SEQUENCE STATE MISMATCH: EXPECTED #{@bootSequence}; OBSERVED #{sequence}"
+    throw error
 
   @sequenceAttempts = {} unless @sequenceAttempts?
 
@@ -197,9 +200,10 @@ enter: (sequence) ->
 
   # Throw an error if the maximum boot sequence attempts has been exceeded
   unless @sequenceAttempts[sequence] < @maxSequenceAttempts
-    throw new Error
-      type: 'recoverable'
-      code: 1
-      message: "Maximum boot sequence attempts of #{@maxSequenceAttempts} exceeded for #{sequence}"
+    error = new Error()
+    error.type = 'recoverable'
+    error.code = 1
+    error.message = "Maximum boot sequence attempts of #{@maxSequenceAttempts} exceeded for #{sequence}"
+    throw error
 
   return @sequenceAttempts[sequence]++

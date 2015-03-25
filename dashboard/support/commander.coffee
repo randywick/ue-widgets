@@ -1,4 +1,4 @@
-### NAMESPACE: window.rw.command ###
+### NAMESPACE: window.rw.commander ###
 namespace: 'commander'
 command: ''
 refreshFrequency: false
